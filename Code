@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Insight Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --accent-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 60px;
+        }
+        
+        .navbar {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .history-item {
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.2s ease;
+            margin-bottom: 10px;
+        }
+        
+        .history-item:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .insight-box {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .tab-content {
+            min-height: 400px;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        .keyword-badge {
+            background-color: var(--secondary-color);
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .tab-pane {
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-file-alt me-2"></i>
+                ResumeInsight
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-bs-target="upload-tab">Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-target="history-tab">History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-target="about-tab">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+           
+                <div class="tab-content active" id="upload-tab">
+                    <div class="row">
+                        <div class="col-lg-8 mx-auto">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h3 class="card-title text-center mb-4">
+                                        <i class="fas fa-cloud-upload-alt feature-icon"></i><br>
+                                        Upload Resume PDF
+                                    </h3>
+                                    <div class="upload-area" id="dropZone">
+                                        <i class="fas fa-file-pdf display-4 text-danger mb-3"></i>
+                                        <h5>Drag & Drop your PDF here</h5>
+                                        <p class="text-muted">or</p>
+                                        <input type="file" id="fileInput" accept=".pdf" hidden>
+                                        <button class="btn btn-primary btn-lg" id="browseButton">
+                                            <i class="fas fa-folder-open me-2"></i>Browse Files
+                                        </button>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <small class="text-muted">Supported format: PDF (max 10MB)</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card" id="resultsCard" style="display: none;">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Analysis Results</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="loadingIndicator" class="text-center py-4">
+                                        <div class="spinner-border text-primary spinner" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-3">Processing your document with AI...</p>
+                                    </div>
+                                    <div id="resultsContent" style="display: none;">
+                                        <h6>Document Summary:</h6>
+                                        <div class="insight-box mb-4">
+                                            <p id="summaryText">No summary available.</p>
+                                        </div>
+                                        <h6>Metadata:</h6>
+                                        <ul class="list-group mb-4" id="metadataList">
+                                        </ul>
+                                        <div class="text-center mt-4">
+                                            <button class="btn btn-outline-primary" id="analyzeAnother">
+                                                <i class="fas fa-redo me-2"></i>Analyze Another Document
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="history-tab" style="display: none;">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Analysis History</h5>
+                                    <button class="btn btn-sm btn-outline-danger" id="clearHistory">
+                                        <i class="fas fa-trash me-1"></i>Clear History
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="historyContent">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Document Name</th>
+                                                        <th>Upload Date</th>
+                                                        <th>Summary Type</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="historyTable">
+                                                    <tr>
+                                                        <td colspan="4" class="text-center py-4">No history available yet.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="about-tab" style="display: none;">
+                    <div class="row">
+                        <div class="col-lg-8 mx-auto">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h3 class="card-title text-center mb-4">About ResumeInsight</h3>
+                                    <p class="lead">ResumeInsight is an AI-powered tool that extracts key insights from resumes and other PDF documents.</p>
+                                    
+                                    <h5 class="mt-4">How It Works</h5>
+                                    <ol>
+                                        <li>Upload your PDF document</li>
+                                        <li>Our system processes the text content</li>
+                                        <li>We use Sarvam AI to generate a comprehensive summary</li>
+                                        <li>If AI is unavailable, we extract the most frequent keywords</li>
+                                        <li>View and manage your analysis history</li>
+                                    </ol>
+                                    
+                                    <h5 class="mt-4">Technology Stack</h5>
+                                    <div class="row text-center mt-3">
+                                        <div class="col-md-3 col-6 mb-3">
+                                            <i class="fab fa-python fa-3x text-primary mb-2"></i>
+                                            <p>FastAPI</p>
+                                        </div>
+                                        <div class="col-md-3 col-6 mb-3">
+                                            <i class="fab fa-js-square fa-3x text-warning mb-2"></i>
+                                            <p>JavaScript</p>
+                                        </div>
+                                        <div class="col-md-3 col-6 mb-3">
+                                            <i class="fas fa-brain fa-3x text-info mb-2"></i>
+                                            <p>Sarvam AI</p>
+                                        </div>
+                                        <div class="col-md-3 col-6 mb-3">
+                                            <i class="fas fa-database fa-3x text-success mb-2"></i>
+                                            <p>SQLite</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="py-3">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">ResumeInsight &copy; 2023. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">Full Stack Developer Assessment</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    //javascript
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const browseButton = document.getElementById('browseButton');
+            const resultsCard = document.getElementById('resultsCard');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsContent = document.getElementById('resultsContent');
+            const analyzeAnother = document.getElementById('analyzeAnother');
+            const historyTable = document.getElementById('historyTable');
+            const clearHistoryBtn = document.getElementById('clearHistory');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            let analysisHistory = JSON.parse(localStorage.getItem('resumeAnalysisHistory')) || [];
+            
+            updateHistoryTable();
+
+            browseButton.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+            analyzeAnother.addEventListener('click', resetUI);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetTab = this.getAttribute('data-bs-target');
+      
+                    navLinks.forEach(navLink => navLink.classList.remove('active'));
+                    this.classList.add('active');
+ 
+                    tabContents.forEach(tab => {
+                        if (tab.id === targetTab) {
+                            tab.style.display = 'block';
+                        } else {
+                            tab.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropZone.classList.add('dragover');
+            }
+            
+            function unhighlight() {
+                dropZone.classList.remove('dragover');
+            }
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length && files[0].type === 'application/pdf') {
+                    handleFiles(files[0]);
+                } else {
+                    alert('Please upload a PDF file');
+                }
+            }
+            
+            function handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length && files[0].type === 'application/pdf') {
+                    handleFiles(files[0]);
+                } else {
+                    alert('Please upload a PDF file');
+                }
+            }
+            
+            function handleFiles(file) {
+                resultsCard.style.display = 'block';
+                loadingIndicator.style.display = 'block';
+                resultsContent.style.display = 'none';
+                
+                // API call 
+                simulateAPICall(file);
+            }
+            
+            function simulateAPICall(file) {
+                // This is a simulation - in a real implementation, you would:
+                // 1. Create a FormData object 
+                // 2. Send a POST request to /upload-resume endpoint
+                // 3. Process the response and display the results
+
+                setTimeout(() => {
+                    loadingIndicator.style.display = 'none';
+                    resultsContent.style.display = 'block';
+ 
+                    const useAI = Math.random() > 0.2;
+ 
+                    const summary = useAI ? generateAISummary(file.name) : generateFallbackAnalysis(file.name);
+                    const analysisType = useAI ? "AI Summary" : "Keyword Analysis";
+ 
+                    document.getElementById('summaryText').textContent = summary;
+ 
+                    const metadataList = document.getElementById('metadataList');
+                    metadataList.innerHTML = `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Filename
+                            <span class="text-primary">${file.name}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Upload Date
+                            <span class="text-primary">${new Date().toLocaleDateString()}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            File Size
+                            <span class="text-primary">${(file.size / 1024).toFixed(2)} KB</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Analysis Type
+                            <span class="badge ${useAI ? 'bg-success' : 'bg-warning'} rounded-pill">${analysisType}</span>
+                        </li>
+                    `;
+                    
+
+                    addToHistory(file.name, analysisType, summary);
+                }, 2000);
+            }
+            
+            function generateAISummary(filename) {
+                if (filename.toLowerCase().includes('developer')) {
+                    return "This resume demonstrates 5+ years of experience in full-stack development with expertise in JavaScript, Python, and cloud technologies. The candidate shows strong proficiency in React and Node.js with experience leading development teams on complex projects. Education includes a Bachelor's degree in Computer Science from a reputable university. Key strengths include problem-solving abilities and experience with agile development methodologies.";
+                } else if (filename.toLowerCase().includes('designer')) {
+                    return "This portfolio showcases strong skills in UI/UX design with proficiency in Figma, Adobe Creative Suite, and prototyping tools. The designer has experience working with cross-functional teams and has contributed to several successful product launches. Demonstrates a strong understanding of user-centered design principles and has experience conducting user research and usability testing.";
+                } else if (filename.toLowerCase().includes('manager')) {
+                    return "This resume highlights 8+ years of project management experience with PMP certification and expertise in Agile methodologies. The candidate has successfully led teams of 15+ people and managed budgets exceeding $2M. Strong communication skills and experience with risk management and stakeholder engagement are evident.";
+                } else {
+                    return "This resume demonstrates strong qualifications with extensive experience in the field. The candidate possesses excellent communication skills and a proven track record of success. Education and certifications align well with industry requirements. Key strengths include leadership abilities and a results-oriented approach to problem-solving.";
+                }
+            }
+            
+            function generateFallbackAnalysis(filename) {
+                if (filename.toLowerCase().includes('developer')) {
+                    return "Top keywords: JavaScript, Python, React, Node.js, API, Development, Database, Git, Agile, Full-stack";
+                } else if (filename.toLowerCase().includes('designer')) {
+                    return "Top keywords: UI, UX, Design, Figma, Adobe, Prototype, User Research, Wireframes, Visual Design, Typography";
+                } else if (filename.toLowerCase().includes('manager')) {
+                    return "Top keywords: Project Management, Leadership, Agile, Budget, Team, Stakeholder, Strategy, Planning, Risk Management, Communication";
+                } else {
+                    return "Top keywords: Experience, Management, Communication, Leadership, Development, Strategy, Analysis, Problem-solving, Teamwork, Results";
+                }
+            }
+            
+            function addToHistory(filename, analysisType, summary) {
+                const historyItem = {
+                    id: Date.now(),
+                    filename,
+                    date: new Date().toLocaleString(),
+                    analysisType,
+                    summary
+                };
+
+                analysisHistory.unshift(historyItem);
+
+                if (analysisHistory.length > 10) {
+                    analysisHistory = analysisHistory.slice(0, 10);
+                }
+
+                localStorage.setItem('resumeAnalysisHistory', JSON.stringify(analysisHistory));
+                updateHistoryTable();
+            }
+            
+            function updateHistoryTable() {
+                if (analysisHistory.length === 0) {
+                    historyTable.innerHTML = '<tr><td colspan="4" class="text-center py-4">No history available yet.</td></tr>';
+                    return;
+                }
+                
+                historyTable.innerHTML = '';
+                analysisHistory.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'history-item';
+                    row.innerHTML = `
+                        <td>${item.filename}</td>
+                        <td>${item.date}</td>
+                        <td><span class="badge ${item.analysisType === 'AI Summary' ? 'bg-success' : 'bg-warning'}">${item.analysisType}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-item" data-id="${item.id}">View</button>
+                            <button class="btn btn-sm btn-outline-danger delete-item" data-id="${item.id}">Delete</button>
+                        </td>
+                    `;
+                    historyTable.appendChild(row);
+                });
+
+                document.querySelectorAll('.view-item').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-id'));
+                        viewHistoryItem(id);
+                    });
+                });
+                
+                document.querySelectorAll('.delete-item').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-id'));
+                        deleteHistoryItem(id);
+                    });
+                });
+            }
+            
+            function viewHistoryItem(id) {
+                const item = analysisHistory.find(i => i.id === id);
+                if (!item) return;
+ 
+                document.querySelector('[data-bs-target="upload-tab"]').click();
+
+                resultsCard.style.display = 'block';
+                loadingIndicator.style.display = 'none';
+                resultsContent.style.display = 'block';
+
+                document.getElementById('summaryText').textContent = item.summary;
+                
+                const metadataList = document.getElementById('metadataList');
+                metadataList.innerHTML = `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Filename
+                        <span class="text-primary">${item.filename}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Upload Date
+                        <span class="text-primary">${item.date}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Analysis Type
+                        <span class="badge ${item.analysisType === 'AI Summary' ? 'bg-success' : 'bg-warning'} rounded-pill">${item.analysisType}</span>
+                    </li>
+                `;
+            }
+            
+            function deleteHistoryItem(id) {
+                analysisHistory = analysisHistory.filter(item => item.id !== id);
+                localStorage.setItem('resumeAnalysisHistory', JSON.stringify(analysisHistory));
+                updateHistoryTable();
+            }
+            
+            function clearHistory() {
+                if (confirm('Are you sure you want to clear all history?')) {
+                    analysisHistory = [];
+                    localStorage.removeItem('resumeAnalysisHistory');
+                    updateHistoryTable();
+                }
+            }
+            
+            function resetUI() {
+                resultsCard.style.display = 'none';
+                fileInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
